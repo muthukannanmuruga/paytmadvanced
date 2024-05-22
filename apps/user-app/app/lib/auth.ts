@@ -1,23 +1,20 @@
-import {PrismaClient} from "@repo/db/prismaclient";
+import db from "@repo/db/prismaclient";
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt";
-
-const client = new PrismaClient;
 
 export const authOptions = {
     providers: [
       CredentialsProvider({
           name: 'Credentials',
           credentials: {
-            phone: { label: "Phone number", type: "text", placeholder: "1231231231" },
-            password: { label: "Password", type: "password" }
+            phone: { label: "Phone number", type: "text", placeholder: "1231231231", required: true },
+            password: { label: "Password", type: "password", required: true }
           },
           // TODO: User credentials type from next-aut
           async authorize(credentials: any) {
-            console.log(credentials)
             // Do zod validation, OTP validation here
             const hashedPassword = await bcrypt.hash(credentials.password, 10);
-            const existingUser = await client.user.findFirst({
+            const existingUser = await db.user.findFirst({
                 where: {
                     number: credentials.phone
                 }
@@ -36,13 +33,13 @@ export const authOptions = {
             }
 
             try {
-                const user = await client.user.create({
+                const user = await db.user.create({
                     data: {
                         number: credentials.phone,
                         password: hashedPassword
                     }
                 });
-
+            
                 return {
                     id: user.id.toString(),
                     name: user.name,
@@ -56,7 +53,6 @@ export const authOptions = {
           },
         })
     ],
-    
     secret: process.env.JWT_SECRET || "secret",
     callbacks: {
         // TODO: can u fix the type here? Using any is bad
@@ -67,3 +63,4 @@ export const authOptions = {
         }
     }
   }
+  
