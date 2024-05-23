@@ -12,6 +12,7 @@ export const authOptions = {
           },
           // TODO: User credentials type from next-aut
           async authorize(credentials: any) {
+            console.log(credentials)
             // Do zod validation, OTP validation here
             const hashedPassword = await bcrypt.hash(credentials.password, 10);
             const existingUser = await db.user.findFirst({
@@ -55,12 +56,20 @@ export const authOptions = {
     ],
     secret: process.env.JWT_SECRET || "secret",
     callbacks: {
-        // TODO: can u fix the type here? Using any is bad
-        async session({ token, session }: any) {
-            session.user.id = token.sub
 
-            return session
+        async jwt({ token, user }: any) {
+            if (user) {
+                token.sub = user.id.toString();
+            }
+            return token;
+        },
+        async session({ session, token }: any) {
+            if (token && session.user) {
+                session.user.id = token.sub;
+            }
+            return session;
         }
+    
     }
   }
   
